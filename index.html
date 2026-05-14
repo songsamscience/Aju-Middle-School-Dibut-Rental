@@ -120,6 +120,71 @@
   .action-btn.active[data-act="rent"] .nm{color:var(--brand-deep);}
   .action-btn.active[data-act="return"]{border-color:var(--return);background:var(--return-soft);box-shadow:0 6px 16px -8px rgba(13,148,136,.55);transform:translateY(-1px);animation:none;}
   .action-btn.active[data-act="return"] .nm{color:#0f766e;}
+  /* 선택 시 체크 마크 */
+  .action-btn .check{
+    position:absolute;top:10px;right:10px;
+    width:24px;height:24px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-size:14px;font-weight:bold;
+    opacity:0;transform:scale(0);
+    transition:all .3s cubic-bezier(.2,.7,.3,1.4);
+  }
+  .action-btn.active .check{opacity:1;transform:scale(1);}
+  .action-btn.active[data-act="rent"] .check{background:var(--brand);}
+  .action-btn.active[data-act="return"] .check{background:var(--return);}
+  /* 클릭 시 펄스 애니메이션 */
+  .action-btn.pulse{animation:btnPulse .5s ease;}
+  @keyframes btnPulse{
+    0%{transform:scale(1);}
+    40%{transform:scale(.96);}
+    70%{transform:scale(1.04);}
+    100%{transform:scale(1);}
+  }
+  /* 선택 완료 배너 */
+  .selected-banner{
+    margin-top:12px;padding:14px 16px;border-radius:12px;
+    display:none;align-items:center;gap:12px;
+    animation:slideDown .35s cubic-bezier(.2,.7,.3,1.2);
+    font-size:14px;font-weight:600;
+  }
+  .selected-banner.show{display:flex;}
+  .selected-banner.rent{
+    background:linear-gradient(135deg,#dbe7ff,#bfd4ff);
+    color:var(--brand-deep);border:1.5px solid var(--brand);
+  }
+  .selected-banner.return{
+    background:linear-gradient(135deg,#ccfbf1,#a7f3e0);
+    color:#0f766e;border:1.5px solid var(--return);
+  }
+  .selected-banner .check-big{
+    width:32px;height:32px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-size:18px;font-weight:bold;flex-shrink:0;
+  }
+  .selected-banner.rent .check-big{background:var(--brand);}
+  .selected-banner.return .check-big{background:var(--return);}
+  .selected-banner .text{flex:1;line-height:1.4;}
+  .selected-banner .text small{
+    display:block;font-weight:400;font-size:12px;opacity:.85;margin-top:2px;
+  }
+  @keyframes slideDown{
+    from{opacity:0;transform:translateY(-8px);}
+    to{opacity:1;transform:translateY(0);}
+  }
+  /* 안내 문구 강조 */
+  .action-prompt{
+    margin-top:10px;padding:10px 14px;border-radius:10px;
+    background:#fffbeb;border:1.5px dashed #fbbf24;
+    color:#92400e;font-size:13px;font-weight:600;
+    text-align:center;display:none;
+    animation:bounceIn .4s ease;
+  }
+  .action-prompt.show{display:block;}
+  @keyframes bounceIn{
+    0%{opacity:0;transform:scale(.9);}
+    60%{transform:scale(1.03);}
+    100%{opacity:1;transform:scale(1);}
+  }
   /* SUBMIT */
   .submit{
     margin-top:20px;width:100%;padding:16px;font-size:16px;font-weight:700;
@@ -197,15 +262,22 @@
     <label class="label" id="actLabel">구분 <span class="req">*</span></label>
     <div class="action-row" role="radiogroup" aria-label="대여 또는 반납">
       <div class="action-btn" data-act="rent" role="radio" aria-checked="false" tabindex="0">
+        <span class="check">✓</span>
         <span class="ico">📤</span>
         <div class="nm">대여</div>
         <div class="desc">디벗 빌리기</div>
       </div>
       <div class="action-btn" data-act="return" role="radio" aria-checked="false" tabindex="0">
+        <span class="check">✓</span>
         <span class="ico">📥</span>
         <div class="nm">반납</div>
         <div class="desc">디벗 돌려주기</div>
       </div>
+    </div>
+    <div class="action-prompt" id="actionPrompt">👆 위 버튼을 눌러주세요</div>
+    <div class="selected-banner" id="selectedBanner">
+      <div class="check-big">✓</div>
+      <div class="text" id="selectedText"></div>
     </div>
     <p class="hint" id="hint-act">학번과 이름을 입력하면 자동 추천됩니다</p>
 
@@ -265,6 +337,9 @@ const statusText = $('#statusText');
 const rentBtn = document.querySelector('[data-act="rent"]');
 const returnBtn = document.querySelector('[data-act="return"]');
 const actionRow = document.querySelector('.action-row');
+const actionPrompt = document.querySelector('#actionPrompt');
+const selectedBanner = document.querySelector('#selectedBanner');
+const selectedText = document.querySelector('#selectedText');
 
 let selectedAction = null;
 let lookupTimer = null;
@@ -314,9 +389,14 @@ function triggerLookup(){
 
 function resetStatus(){
   statusBox.className = 'status-box';
-  rentBtn.classList.remove('disabled','recommended','hidden');
-  returnBtn.classList.remove('disabled','recommended','hidden');
+  rentBtn.classList.remove('disabled','recommended','hidden','active','pulse');
+  returnBtn.classList.remove('disabled','recommended','hidden','active','pulse');
+  rentBtn.setAttribute('aria-checked','false');
+  returnBtn.setAttribute('aria-checked','false');
   actionRow.classList.remove('single');
+  actionPrompt.classList.remove('show');
+  selectedBanner.classList.remove('show','rent','return');
+  selectedAction = null;
   currentState = null;
 }
 
@@ -344,8 +424,11 @@ async function lookupStatus(studentId, name){
       returnBtn.classList.remove('hidden','disabled');
       returnBtn.classList.add('recommended');
       actionRow.classList.add('single');
-      autoSelect('return');
       $('#actLabel').innerHTML = '구분 <span class="req">*</span> <span style="color:#0f766e;font-weight:600">(반납 가능)</span>';
+      // 안내 문구 표시
+      actionPrompt.textContent = '👆 [반납] 버튼을 눌러주세요';
+      actionPrompt.classList.add('show');
+      $('#hint-act').textContent = '';
     } else {
       // 대여 가능 → 대여만 표시
       statusBox.className = 'status-box show available';
@@ -357,8 +440,11 @@ async function lookupStatus(studentId, name){
       rentBtn.classList.remove('hidden','disabled');
       rentBtn.classList.add('recommended');
       actionRow.classList.add('single');
-      autoSelect('rent');
       $('#actLabel').innerHTML = '구분 <span class="req">*</span> <span style="color:#1d4ed8;font-weight:600">(대여 가능)</span>';
+      // 안내 문구 표시
+      actionPrompt.textContent = '👆 [대여] 버튼을 눌러주세요';
+      actionPrompt.classList.add('show');
+      $('#hint-act').textContent = '';
     }
   } catch(err){
     console.warn('상태 조회 실패:', err);
@@ -372,40 +458,56 @@ async function lookupStatus(studentId, name){
     rentBtn.classList.remove('disabled','hidden');
     returnBtn.classList.remove('disabled','hidden');
     actionRow.classList.remove('single');
+    actionPrompt.textContent = '👆 대여 또는 반납 버튼을 눌러주세요';
+    actionPrompt.classList.add('show');
   }
 }
 
 function autoSelect(act){
-  const btn = act === 'rent' ? rentBtn : returnBtn;
-  document.querySelectorAll('.action-btn').forEach(b=>{
-    b.classList.remove('active');
-    b.setAttribute('aria-checked','false');
-  });
-  btn.classList.add('active');
-  btn.setAttribute('aria-checked','true');
-  selectedAction = act;
-  $('#hint-act').classList.remove('error');
-  $('#hint-act').textContent = act === 'rent' ? '✓ 대여로 자동 선택되었습니다' : '✓ 반납으로 자동 선택되었습니다';
+  // (사용 안 함 - 학생이 직접 버튼을 누르도록 변경됨)
 }
 
 /* ── 대여/반납 토글 (수동 클릭) ── */
 document.querySelectorAll('.action-btn').forEach(btn=>{
   const choose = ()=>{
     if(btn.classList.contains('disabled')){
-      // 비활성 버튼 클릭 시 안내
       const need = btn.dataset.act === 'rent' ? '반납' : '대여';
       showToast(`현재는 ${need}만 가능합니다`, 'err');
       return;
     }
+    // 다른 버튼 선택 해제
     document.querySelectorAll('.action-btn').forEach(b=>{
-      b.classList.remove('active');
+      b.classList.remove('active','pulse');
       b.setAttribute('aria-checked','false');
     });
+    // 현재 버튼 활성화 + 펄스 애니메이션
     btn.classList.add('active');
     btn.setAttribute('aria-checked','true');
+    // 펄스 애니메이션 (재실행 위해 reflow)
+    void btn.offsetWidth;
+    btn.classList.add('pulse');
+
     selectedAction = btn.dataset.act;
+
+    // 안내 문구 숨기고 선택 완료 배너 표시
+    actionPrompt.classList.remove('show');
+    selectedBanner.classList.remove('rent','return');
+    if(selectedAction === 'rent'){
+      selectedBanner.classList.add('rent','show');
+      selectedText.innerHTML = `<b>대여를 선택했습니다</b><small>아래 [제출하기] 버튼을 눌러 완료해 주세요</small>`;
+    } else {
+      selectedBanner.classList.add('return','show');
+      selectedText.innerHTML = `<b>반납을 선택했습니다</b><small>아래 [제출하기] 버튼을 눌러 완료해 주세요</small>`;
+    }
+
     $('#hint-act').classList.remove('error');
-    $('#hint-act').textContent = selectedAction === 'rent' ? '✓ 대여로 기록됩니다' : '✓ 반납으로 기록됩니다';
+    $('#hint-act').textContent = '';
+
+    // 모바일 진동 피드백 (지원되는 기기만)
+    if(navigator.vibrate) navigator.vibrate(40);
+
+    // 토스트로도 한 번 더 확인
+    showToast(selectedAction === 'rent' ? '✓ 대여 선택됨' : '✓ 반납 선택됨', 'ok');
   };
   btn.addEventListener('click', choose);
   btn.addEventListener('keydown', e=>{
@@ -503,13 +605,14 @@ doneBtn.addEventListener('click', ()=>{
   numEl.value = '';
   nameEl.value = '';
   document.querySelectorAll('.action-btn').forEach(b=>{
-    b.classList.remove('active','disabled','recommended','hidden');
+    b.classList.remove('active','disabled','recommended','hidden','pulse');
     b.setAttribute('aria-checked','false');
   });
   actionRow.classList.remove('single');
+  actionPrompt.classList.remove('show');
+  selectedBanner.classList.remove('show','rent','return');
   selectedAction = null;
   resetStatus();
-  // statusBox 인라인 스타일 초기화 (조회 실패 케이스 대비)
   statusBox.style.background = '';
   statusBox.style.borderColor = '';
   statusIco.style.background = '';
