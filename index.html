@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>아주중학교 디벗 대여·반납 시스템 | 송쌤과학</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Black+Han+Sans&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-1:#0b1220;
+    --bg-2:#111a2e;
+    --card:#ffffff;
+    --ink:#1a2238;
+    --ink-soft:#566388;
+    --line:#e6ebf5;
+    --brand:#2563eb;
+    --brand-deep:#1d4ed8;
+    --brand-soft:#dbe7ff;
+    --return:#0d9488;
+    --return-soft:#ccfbf1;
+    --warn:#ef4444;
+    --ok:#16a34a;
+    --shadow:0 20px 60px -20px rgba(15,23,42,.35), 0 8px 20px -10px rgba(15,23,42,.18);
+    --radius:18px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;font-family:'Gowun Dodum','Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:var(--ink);}
+  body{
+    min-height:100dvh;
+    background:
+      radial-gradient(1200px 600px at 10% -10%, rgba(37,99,235,.35), transparent 60%),
+      radial-gradient(900px 500px at 110% 10%, rgba(13,148,136,.28), transparent 60%),
+      linear-gradient(180deg, var(--bg-1), var(--bg-2));
+    padding:24px 16px 60px;
+    display:flex;justify-content:center;align-items:flex-start;
+  }
+  .wrap{width:100%;max-width:480px;display:flex;flex-direction:column;gap:18px;}
+  /* HEADER */
+  header.brand{color:#fff;text-align:center;padding:8px 0 4px;}
+  .school-tag{
+    display:inline-block;font-size:12px;letter-spacing:.2em;
+    color:#bcd0ff;background:rgba(255,255,255,.08);
+    padding:6px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.15);
+  }
+  h1{font-family:'Black Han Sans',sans-serif;font-size:30px;letter-spacing:-.5px;margin:14px 0 6px;color:#fff;}
+  h1 .accent{background:linear-gradient(90deg,#7cc4ff,#5eead4);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .subtitle{color:#a9b6d6;font-size:13px;margin:0;}
+  /* CARD */
+  .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px 20px 24px;border:1px solid rgba(255,255,255,.6);}
+  .label{display:block;font-size:13px;font-weight:600;color:var(--ink);margin:14px 0 8px;letter-spacing:-.2px;}
+  .label .req{color:var(--warn);margin-left:3px;}
+  .field{
+    width:100%;padding:14px 16px;font-size:16px;font-family:inherit;
+    background:#f7f9fc;border:1.5px solid var(--line);border-radius:12px;color:var(--ink);
+    transition:border-color .15s, background .15s, box-shadow .15s;outline:none;
+  }
+  .field::placeholder{color:#a3aec7;}
+  .field:focus{border-color:var(--brand);background:#fff;box-shadow:0 0 0 4px rgba(37,99,235,.12);}
+  .field.invalid{border-color:var(--warn);background:#fff5f5;box-shadow:0 0 0 4px rgba(239,68,68,.10);}
+  select.field{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23566388' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");background-repeat:no-repeat;background-position:right 16px center;padding-right:42px;}
+  .hint{font-size:12px;color:var(--ink-soft);margin-top:6px;}
+  .hint.error{color:var(--warn);font-weight:600;}
+  /* 학번 그리드 (학년/반/번호) */
+  .id-grid{display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:8px;}
+  /* 상태 박스 */
+  .status-box{
+    margin-top:14px;padding:14px 16px;border-radius:12px;
+    background:#f7f9fc;border:1.5px solid var(--line);
+    display:none;align-items:center;gap:12px;
+    animation:fadeIn .25s ease;
+  }
+  .status-box.show{display:flex;}
+  .status-box.rented{background:#fff4e6;border-color:#fcd9a8;}
+  .status-box.available{background:#e8f7ee;border-color:#a8e0bb;}
+  .status-box.checking{background:#eef2ff;border-color:#c7d2fe;}
+  .status-ico{
+    width:36px;height:36px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:18px;color:#fff;font-weight:bold;
+  }
+  .status-box.rented .status-ico{background:#f59e0b;}
+  .status-box.available .status-ico{background:#16a34a;}
+  .status-box.checking .status-ico{background:#6366f1;}
+  .status-text{flex:1;font-size:13px;line-height:1.4;}
+  .status-text b{font-size:14px;display:block;margin-bottom:2px;color:var(--ink);}
+  .status-text small{color:var(--ink-soft);font-size:11px;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+  /* 회전 아이콘 */
+  .spin-icon{display:inline-block;animation:spin 1s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  /* 대여/반납 토글 */
+  .action-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;transition:grid-template-columns .3s ease;}
+  .action-row.single{grid-template-columns:1fr;}
+  .action-btn{
+    position:relative;cursor:pointer;padding:18px 12px;border-radius:14px;
+    border:2px solid var(--line);background:#f7f9fc;text-align:center;
+    transition:all .2s ease;user-select:none;
+  }
+  .action-btn .ico{font-size:24px;display:block;margin-bottom:6px;}
+  .action-btn .nm{font-weight:700;font-size:15px;color:var(--ink);}
+  .action-btn .desc{font-size:11px;color:var(--ink-soft);margin-top:2px;}
+  .action-btn.hidden{display:none !important;}
+  .action-btn.disabled{
+    opacity:.35;cursor:not-allowed;filter:grayscale(.5);
+  }
+  .action-btn.recommended{
+    border-color:#facc15;background:#fefce8;
+    animation:pulse 1.6s ease infinite;
+  }
+  .action-btn.recommended::after{
+    content:'추천';position:absolute;top:-8px;right:-6px;
+    background:#facc15;color:#713f12;font-size:10px;
+    font-weight:700;padding:2px 8px;border-radius:999px;
+    box-shadow:0 2px 6px rgba(0,0,0,.15);
+  }
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(250,204,21,.5)}50%{box-shadow:0 0 0 8px rgba(250,204,21,0)}}
+  .action-btn.active[data-act="rent"]{border-color:var(--brand);background:var(--brand-soft);box-shadow:0 6px 16px -8px rgba(37,99,235,.55);transform:translateY(-1px);animation:none;}
+  .action-btn.active[data-act="rent"] .nm{color:var(--brand-deep);}
+  .action-btn.active[data-act="return"]{border-color:var(--return);background:var(--return-soft);box-shadow:0 6px 16px -8px rgba(13,148,136,.55);transform:translateY(-1px);animation:none;}
+  .action-btn.active[data-act="return"] .nm{color:#0f766e;}
+  /* SUBMIT */
+  .submit{
+    margin-top:20px;width:100%;padding:16px;font-size:16px;font-weight:700;
+    font-family:inherit;color:#fff;border:none;border-radius:14px;cursor:pointer;
+    background:linear-gradient(135deg,#1f2a44,#0b1220);
+    box-shadow:0 10px 24px -10px rgba(11,18,32,.6);
+    transition:transform .1s ease, opacity .2s;letter-spacing:.5px;
+  }
+  .submit:active{transform:translateY(1px);}
+  .submit:disabled{opacity:.55;cursor:not-allowed;}
+  .submit .spinner{display:none;width:16px;height:16px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite;vertical-align:-3px;margin-right:8px;}
+  .submit.loading .spinner{display:inline-block;}
+  /* TOAST */
+  .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(80px);background:#1a2238;color:#fff;padding:14px 22px;border-radius:14px;font-size:14px;font-weight:600;box-shadow:0 14px 30px -10px rgba(0,0,0,.5);transition:transform .35s cubic-bezier(.2,.7,.3,1.2), opacity .25s;opacity:0;z-index:99;pointer-events:none;max-width:90%;text-align:center;}
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+  .toast.ok{background:linear-gradient(135deg,#16a34a,#0d7a3a);}
+  .toast.err{background:linear-gradient(135deg,#ef4444,#b91c1c);}
+  /* FOOTER */
+  footer{text-align:center;color:#8294b8;font-size:12px;padding:6px 0 0;}
+  footer a{color:#bcd0ff;text-decoration:none;margin:0 6px;}
+  footer .copy{margin-top:4px;opacity:.7;font-family:'JetBrains Mono',monospace;font-size:11px;}
+  /* DONE */
+  .done-overlay{position:fixed;inset:0;background:rgba(11,18,32,.78);display:flex;align-items:center;justify-content:center;padding:24px;z-index:120;opacity:0;pointer-events:none;transition:opacity .25s;backdrop-filter:blur(6px);}
+  .done-overlay.show{opacity:1;pointer-events:auto;}
+  .done-card{background:#fff;border-radius:24px;padding:34px 26px;text-align:center;max-width:360px;width:100%;transform:scale(.9);transition:transform .35s cubic-bezier(.2,.7,.3,1.4);box-shadow:0 30px 80px -10px rgba(0,0,0,.6);}
+  .done-overlay.show .done-card{transform:scale(1);}
+  .done-ico{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#16a34a,#0d7a3a);color:#fff;font-size:36px;font-weight:bold;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;animation:pop .4s ease;}
+  @keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+  .done-title{font-family:'Black Han Sans',sans-serif;font-size:22px;margin:6px 0 4px;}
+  .done-msg{color:var(--ink-soft);font-size:14px;line-height:1.55;margin:4px 0 18px;}
+  .done-info{background:#f7f9fc;border-radius:12px;padding:12px;font-size:13px;color:var(--ink);margin-bottom:18px;text-align:left;border:1px solid var(--line);}
+  .done-info b{color:var(--brand-deep);}
+  .done-btn{width:100%;padding:14px;border:none;border-radius:12px;background:var(--ink);color:#fff;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit;}
+  @media (max-width:380px){h1{font-size:26px;} .field{font-size:15px;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="brand">
+    <span class="school-tag">AJU MIDDLE SCHOOL · DIBOT</span>
+    <h1>디벗 <span class="accent">대여·반납</span></h1>
+    <p class="subtitle">학년·반·번호와 이름을 선택해 주세요</p>
+  </header>
+
+  <form class="card" id="form" autocomplete="off" novalidate>
+
+    <label class="label">학번 <span class="req">*</span></label>
+    <div class="id-grid">
+      <select class="field" id="grade">
+        <option value="">학년</option>
+        <option value="1">1학년</option>
+        <option value="2">2학년</option>
+        <option value="3">3학년</option>
+      </select>
+      <select class="field" id="classNo">
+        <option value="">반</option>
+      </select>
+      <select class="field" id="number">
+        <option value="">번호</option>
+      </select>
+    </div>
+    <p class="hint" id="hint-id">학년·반·번호를 모두 선택해 주세요</p>
+
+    <label class="label" for="name">이름 <span class="req">*</span></label>
+    <input class="field" type="text" id="name" maxlength="10" placeholder="예: 홍길동">
+    <p class="hint" id="hint-name">본인의 이름을 정확히 입력해 주세요</p>
+
+    <!-- 상태 박스 -->
+    <div class="status-box" id="statusBox">
+      <div class="status-ico" id="statusIco">?</div>
+      <div class="status-text" id="statusText"></div>
+    </div>
+
+    <label class="label" id="actLabel">구분 <span class="req">*</span></label>
+    <div class="action-row" role="radiogroup" aria-label="대여 또는 반납">
+      <div class="action-btn" data-act="rent" role="radio" aria-checked="false" tabindex="0">
+        <span class="ico">📤</span>
+        <div class="nm">대여</div>
+        <div class="desc">디벗 빌리기</div>
+      </div>
+      <div class="action-btn" data-act="return" role="radio" aria-checked="false" tabindex="0">
+        <span class="ico">📥</span>
+        <div class="nm">반납</div>
+        <div class="desc">디벗 돌려주기</div>
+      </div>
+    </div>
+    <p class="hint" id="hint-act">학번과 이름을 입력하면 자동 추천됩니다</p>
+
+    <label class="label" for="date">날짜 <span class="req">*</span></label>
+    <input class="field" type="date" id="date">
+    <p class="hint">기본값은 오늘 날짜입니다</p>
+
+    <button class="submit" type="submit" id="submitBtn">
+      <span class="spinner"></span>
+      <span class="btn-text">제출하기</span>
+    </button>
+
+  </form>
+
+  <footer>
+    <a href="https://www.youtube.com/@songssamscience" target="_blank">YouTube</a>·
+    <a href="https://www.instagram.com/songssam_science/" target="_blank">Instagram</a>
+    <div class="copy">© 송쌤과학 · SongSSam Science</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="done-overlay" id="doneOverlay">
+  <div class="done-card">
+    <div class="done-ico">✓</div>
+    <div class="done-title" id="doneTitle">제출 완료!</div>
+    <div class="done-msg">아래 내용으로 정상 기록되었습니다.</div>
+    <div class="done-info" id="doneInfo"></div>
+    <button class="done-btn" id="doneBtn">새로 입력하기</button>
+  </div>
+</div>
+
+<script>
+/* ─────────────────────────────────────
+   ⚙️ Google Apps Script Web App URL
+───────────────────────────────────── */
+const GAS_URL = "https://script.google.com/macros/s/AKfycbyAw8iRM7NEqY8Z1pEramnefZudyKv6qGp4FWfRlhEUsQE9M4A3y_KPaKv5kD1nBujxwg/exec";
+
+/* ── DOM ── */
+const $ = s => document.querySelector(s);
+const form = $('#form');
+const gradeEl = $('#grade');
+const classEl = $('#classNo');
+const numEl = $('#number');
+const nameEl = $('#name');
+const dateEl = $('#date');
+const submitBtn = $('#submitBtn');
+const toast = $('#toast');
+const doneOverlay = $('#doneOverlay');
+const doneInfo = $('#doneInfo');
+const doneTitle = $('#doneTitle');
+const doneBtn = $('#doneBtn');
+const statusBox = $('#statusBox');
+const statusIco = $('#statusIco');
+const statusText = $('#statusText');
+const rentBtn = document.querySelector('[data-act="rent"]');
+const returnBtn = document.querySelector('[data-act="return"]');
+const actionRow = document.querySelector('.action-row');
+
+let selectedAction = null;
+let lookupTimer = null;
+let currentState = null; // 'rented' | 'available' | null
+
+/* ── 반(1~10), 번호(1~35) 옵션 자동 채우기 ── */
+for(let i=1;i<=10;i++){
+  const o = document.createElement('option');
+  o.value = String(i).padStart(2,'0'); // 두 자리
+  o.textContent = i + '반';
+  classEl.appendChild(o);
+}
+for(let i=1;i<=35;i++){
+  const o = document.createElement('option');
+  o.value = String(i).padStart(2,'0'); // 두 자리
+  o.textContent = i + '번';
+  numEl.appendChild(o);
+}
+
+/* ── 오늘 날짜 ── */
+(function setToday(){
+  const d = new Date();
+  dateEl.value = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+})();
+
+/* ── 학번 문자열 생성 (예: 학년1 반3 번5 → "10305") ── */
+function buildStudentId(){
+  if(!gradeEl.value || !classEl.value || !numEl.value) return '';
+  return gradeEl.value + classEl.value + numEl.value;
+}
+
+/* ── 입력 변경 시 상태 자동 조회 ── */
+[gradeEl, classEl, numEl, nameEl].forEach(el=>{
+  el.addEventListener('change', triggerLookup);
+  el.addEventListener('input', triggerLookup);
+});
+
+function triggerLookup(){
+  clearTimeout(lookupTimer);
+  resetStatus();
+  const id = buildStudentId();
+  const nm = nameEl.value.trim();
+  if(!id || nm.length < 2) return;
+  // 디바운스: 입력 멈춘 뒤 400ms 후 조회
+  lookupTimer = setTimeout(()=> lookupStatus(id, nm), 400);
+}
+
+function resetStatus(){
+  statusBox.className = 'status-box';
+  rentBtn.classList.remove('disabled','recommended','hidden');
+  returnBtn.classList.remove('disabled','recommended','hidden');
+  actionRow.classList.remove('single');
+  currentState = null;
+}
+
+async function lookupStatus(studentId, name){
+  // 조회 중 표시
+  statusBox.className = 'status-box show checking';
+  statusIco.innerHTML = '<span class="spin-icon">⟳</span>';
+  statusText.innerHTML = `<b>상태 확인 중...</b><small>잠시만 기다려 주세요</small>`;
+
+  try{
+    const url = `${GAS_URL}?studentId=${encodeURIComponent(studentId)}&name=${encodeURIComponent(name)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if(data.status !== 'ok'){ throw new Error(data.message || '조회 실패'); }
+
+    currentState = data.state;
+    if(data.state === 'rented'){
+      // 현재 대여 중 → 반납만 표시
+      statusBox.className = 'status-box show rented';
+      statusIco.textContent = '!';
+      statusText.innerHTML = `<b>현재 대여 중인 상태입니다</b><small>${data.lastDate || ''} 대여 · 반납이 필요해요</small>`;
+      // 대여 버튼 숨기고 반납만 표시
+      rentBtn.classList.add('hidden');
+      returnBtn.classList.remove('hidden','disabled');
+      returnBtn.classList.add('recommended');
+      actionRow.classList.add('single');
+      autoSelect('return');
+      $('#actLabel').innerHTML = '구분 <span class="req">*</span> <span style="color:#0f766e;font-weight:600">(반납 가능)</span>';
+    } else {
+      // 대여 가능 → 대여만 표시
+      statusBox.className = 'status-box show available';
+      statusIco.textContent = '✓';
+      const lastInfo = data.lastDate ? `${data.lastDate}에 반납 완료` : '대여 기록 없음';
+      statusText.innerHTML = `<b>대여 가능한 상태입니다</b><small>${lastInfo}</small>`;
+      // 반납 버튼 숨기고 대여만 표시
+      returnBtn.classList.add('hidden');
+      rentBtn.classList.remove('hidden','disabled');
+      rentBtn.classList.add('recommended');
+      actionRow.classList.add('single');
+      autoSelect('rent');
+      $('#actLabel').innerHTML = '구분 <span class="req">*</span> <span style="color:#1d4ed8;font-weight:600">(대여 가능)</span>';
+    }
+  } catch(err){
+    console.warn('상태 조회 실패:', err);
+    // 조회 실패 시 둘 다 보이게 (수동 선택)
+    statusBox.className = 'status-box show';
+    statusBox.style.background = '#fef3c7';
+    statusBox.style.borderColor = '#fcd34d';
+    statusIco.style.background = '#f59e0b';
+    statusIco.textContent = '?';
+    statusText.innerHTML = `<b>상태 조회 실패</b><small>수동으로 대여/반납을 선택해 주세요</small>`;
+    rentBtn.classList.remove('disabled','hidden');
+    returnBtn.classList.remove('disabled','hidden');
+    actionRow.classList.remove('single');
+  }
+}
+
+function autoSelect(act){
+  const btn = act === 'rent' ? rentBtn : returnBtn;
+  document.querySelectorAll('.action-btn').forEach(b=>{
+    b.classList.remove('active');
+    b.setAttribute('aria-checked','false');
+  });
+  btn.classList.add('active');
+  btn.setAttribute('aria-checked','true');
+  selectedAction = act;
+  $('#hint-act').classList.remove('error');
+  $('#hint-act').textContent = act === 'rent' ? '✓ 대여로 자동 선택되었습니다' : '✓ 반납으로 자동 선택되었습니다';
+}
+
+/* ── 대여/반납 토글 (수동 클릭) ── */
+document.querySelectorAll('.action-btn').forEach(btn=>{
+  const choose = ()=>{
+    if(btn.classList.contains('disabled')){
+      // 비활성 버튼 클릭 시 안내
+      const need = btn.dataset.act === 'rent' ? '반납' : '대여';
+      showToast(`현재는 ${need}만 가능합니다`, 'err');
+      return;
+    }
+    document.querySelectorAll('.action-btn').forEach(b=>{
+      b.classList.remove('active');
+      b.setAttribute('aria-checked','false');
+    });
+    btn.classList.add('active');
+    btn.setAttribute('aria-checked','true');
+    selectedAction = btn.dataset.act;
+    $('#hint-act').classList.remove('error');
+    $('#hint-act').textContent = selectedAction === 'rent' ? '✓ 대여로 기록됩니다' : '✓ 반납으로 기록됩니다';
+  };
+  btn.addEventListener('click', choose);
+  btn.addEventListener('keydown', e=>{
+    if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); choose(); }
+  });
+});
+
+/* ── Toast ── */
+function showToast(msg, type='ok'){
+  toast.textContent = msg;
+  toast.className = 'toast show ' + type;
+  setTimeout(()=> toast.classList.remove('show'), 2400);
+}
+
+/* ── 검증 ── */
+function validate(){
+  let ok = true;
+  if(!buildStudentId()){
+    $('#hint-id').textContent = '⚠ 학년·반·번호를 모두 선택해 주세요';
+    $('#hint-id').classList.add('error');
+    [gradeEl,classEl,numEl].forEach(el=>{ if(!el.value) el.classList.add('invalid'); });
+    ok = false;
+  } else {
+    $('#hint-id').textContent = '학년·반·번호를 모두 선택해 주세요';
+    $('#hint-id').classList.remove('error');
+    [gradeEl,classEl,numEl].forEach(el=> el.classList.remove('invalid'));
+  }
+  if(nameEl.value.trim().length < 2){
+    nameEl.classList.add('invalid');
+    $('#hint-name').textContent = '이름은 2자 이상 입력해 주세요';
+    $('#hint-name').classList.add('error');
+    ok = false;
+  } else {
+    nameEl.classList.remove('invalid');
+    $('#hint-name').textContent = '본인의 이름을 정확히 입력해 주세요';
+    $('#hint-name').classList.remove('error');
+  }
+  if(!selectedAction){
+    $('#hint-act').textContent = '⚠ 대여 또는 반납을 선택해 주세요';
+    $('#hint-act').classList.add('error');
+    ok = false;
+  }
+  if(!dateEl.value){ dateEl.classList.add('invalid'); ok = false; }
+  else dateEl.classList.remove('invalid');
+  return ok;
+}
+
+/* ── 제출 ── */
+form.addEventListener('submit', async e=>{
+  e.preventDefault();
+  if(!validate()){ showToast('입력 내용을 확인해 주세요', 'err'); return; }
+
+  const payload = {
+    studentId: buildStudentId(),
+    name: nameEl.value.trim(),
+    action: selectedAction === 'rent' ? '대여' : '반납',
+    date: dateEl.value,
+    timestamp: new Date().toLocaleString('ko-KR',{timeZone:'Asia/Seoul'})
+  };
+
+  submitBtn.disabled = true;
+  submitBtn.classList.add('loading');
+  $('.btn-text').textContent = '전송 중...';
+
+  try{
+    await fetch(GAS_URL, {
+      method:'POST',
+      mode:'no-cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify(payload)
+    });
+    doneTitle.textContent = selectedAction === 'rent' ? '대여 완료!' : '반납 완료!';
+    doneInfo.innerHTML = `
+      <div>학번 : <b>${payload.studentId}</b></div>
+      <div>이름 : <b>${payload.name}</b></div>
+      <div>구분 : <b>${payload.action}</b></div>
+      <div>날짜 : <b>${payload.date}</b></div>
+    `;
+    doneOverlay.classList.add('show');
+  } catch(err){
+    console.error(err);
+    showToast('전송 실패. 다시 시도해 주세요', 'err');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.classList.remove('loading');
+    $('.btn-text').textContent = '제출하기';
+  }
+});
+
+/* ── 새로 입력 ── */
+doneBtn.addEventListener('click', ()=>{
+  doneOverlay.classList.remove('show');
+  gradeEl.value = '';
+  classEl.value = '';
+  numEl.value = '';
+  nameEl.value = '';
+  document.querySelectorAll('.action-btn').forEach(b=>{
+    b.classList.remove('active','disabled','recommended','hidden');
+    b.setAttribute('aria-checked','false');
+  });
+  actionRow.classList.remove('single');
+  selectedAction = null;
+  resetStatus();
+  // statusBox 인라인 스타일 초기화 (조회 실패 케이스 대비)
+  statusBox.style.background = '';
+  statusBox.style.borderColor = '';
+  statusIco.style.background = '';
+  $('#actLabel').innerHTML = '구분 <span class="req">*</span>';
+  $('#hint-act').textContent = '학번과 이름을 입력하면 자동 추천됩니다';
+  $('#hint-act').classList.remove('error');
+  $('#hint-id').textContent = '학년·반·번호를 모두 선택해 주세요';
+  gradeEl.focus();
+});
+</script>
+</body>
+</html>
