@@ -217,6 +217,31 @@
   .done-msg{color:var(--ink-soft);font-size:14px;line-height:1.55;margin:4px 0 18px;}
   .done-info{background:#f7f9fc;border-radius:12px;padding:12px;font-size:13px;color:var(--ink);margin-bottom:18px;text-align:left;border:1px solid var(--line);}
   .done-info b{color:var(--brand-deep);}
+  /* 선생님 확인 요청 강조 배너 */
+  .show-teacher{
+    margin:0 0 16px;padding:16px 14px;border-radius:14px;
+    text-align:center;font-weight:700;
+    background:linear-gradient(135deg,#fef08a,#fde047);
+    border:2px dashed #ca8a04;
+    color:#713f12;
+    box-shadow:0 6px 16px -8px rgba(202,138,4,.4);
+    animation:teacherPulse 1.8s ease-in-out infinite;
+  }
+  .show-teacher .ico{
+    font-size:28px;display:block;margin-bottom:6px;
+    animation:wave 1.4s ease-in-out infinite;transform-origin:70% 70%;
+  }
+  .show-teacher .main{font-size:16px;line-height:1.3;margin-bottom:3px;}
+  .show-teacher .sub{font-size:12px;font-weight:600;color:#854d0e;opacity:.85;}
+  @keyframes teacherPulse{
+    0%,100%{box-shadow:0 6px 16px -8px rgba(202,138,4,.4), 0 0 0 0 rgba(202,138,4,.3);}
+    50%{box-shadow:0 6px 16px -8px rgba(202,138,4,.4), 0 0 0 10px rgba(202,138,4,0);}
+  }
+  @keyframes wave{
+    0%,100%{transform:rotate(0deg);}
+    25%{transform:rotate(-14deg);}
+    75%{transform:rotate(14deg);}
+  }
   .done-btn{width:100%;padding:14px;border:none;border-radius:12px;background:var(--ink);color:#fff;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit;}
   @media (max-width:380px){h1{font-size:26px;} .field{font-size:15px;}}
 </style>
@@ -307,6 +332,11 @@
     <div class="done-title" id="doneTitle">제출 완료!</div>
     <div class="done-msg">아래 내용으로 정상 기록되었습니다.</div>
     <div class="done-info" id="doneInfo"></div>
+    <div class="show-teacher" id="showTeacher">
+      <span class="ico">👋</span>
+      <div class="main" id="showTeacherMain"></div>
+      <div class="sub">제출 화면을 캡처하지 말고 직접 보여주세요</div>
+    </div>
     <button class="done-btn" id="doneBtn">새로 입력하기</button>
   </div>
 </div>
@@ -603,6 +633,10 @@ form.addEventListener('submit', async e=>{
       <div>구분 : <b>${payload.action}</b></div>
       <div>날짜 : <b>${payload.date}</b></div>
     `;
+    // 선생님 확인 요청 문구 (대여/반납 분기)
+    $('#showTeacherMain').textContent = selectedAction === 'rent'
+      ? '이 화면을 선생님께 보여드리고 대여해 주세요'
+      : '이 화면을 선생님께 보여드리고 반납해 주세요';
     doneOverlay.classList.add('show');
   } catch(err){
     console.error(err);
